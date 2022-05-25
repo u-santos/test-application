@@ -1,0 +1,121 @@
+image: node:lts
+
+stages:
+  - build
+  - test
+  - deploy review
+  - stop review
+  - deploy staging
+  - deploy production
+  - production tests
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+variables:
+  STAGING_DOMAIN: dejulius-staging.surge.sh
+  PROD_DOMAIN: paidochris.surge.sh 
+
+build website:
+  stage: build
+  only:
+    - main
+    - merge_requests
+  script:
+    - echo $CI_COMMIT_SHORT_SHA
+    - npm install
+    - npm install -g gatsby-cli
+    - gatsby build
+    - sed -i "s/%%VERSION%%/$CI_COMMIT_SHORT_SHA/" ./public/index.html
+  artifacts:
+    paths:
+      - ./public
+
+test artifact:
+  image: alpine
+  stage: test
+  only:
+    - main
+    - merge_requests
+  script:
+    - grep -q "DOIS" ./public/index.html
+  cache: {}
+
+test website:
+  stage: test
+  only:
+    - main
+    - merge_requests
+  script:
+    - npm install
+    - npm install -g gatsby-cli
+    - gatsby serve &
+    - sleep 10
+    - curl "http://localhost:9000" | grep -q "DOIS"
+
+.deploy template: &deploy_tempate
+  only:
+    - main
+  environment:
+      name: $ENV_NAME
+      url: https://$DOMAIN
+  script:
+    - npm install --global surge
+    - surge --project ./public --domain $DOMAIN
+
+deploy review:
+  <<: *deploy_tempate
+  stage: deploy review
+  only:
+    - merge_requests
+  variables:
+    DOMAIN: julius-$CI_ENVIRONMENT_SLUG.surge.sh
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    on_stop: stop review
+  cache: {}
+
+stop review:
+  stage: deploy review
+  only:
+    - merge_requests
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - npm install --global surge
+    - surge teardown julius-$CI_ENVIRONMENT_SLUG.surge.sh
+  when: manual
+  environment:
+      name: review/$CI_COMMIT_REF_NAME
+      url: https://julius-$CI_ENVIRONMENT_SLUG.surge.sh
+      action: stop
+  cache: {}
+
+deploy staging:
+  <<: *deploy_tempate
+  stage: deploy staging
+  variables:
+    ENV_NAME: staging
+    DOMAIN: $STAGING_DOMAIN
+  cache: {}
+
+deploy production:
+  <<: *deploy_tempate
+  stage: deploy production
+  variables:
+    ENV_NAME: production
+    DOMAIN: $PROD_DOMAIN
+  cache: {}
+
+production tests:
+  image: alpine
+  stage: production tests
+  only:
+    - main  
+  script:
+    - apk add --no-cache curl
+    - curl -s "https://$PROD_DOMAIN" | grep -q "DOIS"
+    - curl -s "https://$PROD_DOMAIN" | grep -q "$CI_COMMIT_SHORT_SHA"
+  cache: {}
