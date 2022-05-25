@@ -6,7 +6,7 @@ import Layout from "../components/layout"
 
 const IndexPage = () => (
   <Layout>
-    <h1>Esse é o ambiente de produção, Willkommen Sie.</h1>
+    <h1>Esse é o ambiente de producao, Willkommen Sie.</h1>
     <StaticImage
       src="../images/sambatech.jpg"
       width={600}

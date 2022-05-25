@@ -1,20 +1,25 @@
 version: 2.1
+
 jobs:
   build:
-    working_directory: ~/repo
+    working_directory: ~/circleci-project
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:18.2.0
     steps:
       - checkout
-      - run:
-          name: Update NPM
-          command: "sudo npm install -g npm"
-      - run:
-          name: NPM install
-          command: "sudo npm install --unsafe-perm"
-      - run:
-          name: NPM install Gatsby-cli
-          command: "sudo npm install -g gatsby-cli"
-      - run:
-          name: Build
-          command: "sudo gatsby build"
+      - run: npm install && npm install -g gatsby-cli && gatsby build
+  test:
+    working_directory: ~/circleci-project
+    docker:
+      - image: "cimg/node:18.2.0"
+    steps:
+      - checkout
+      - run: grep -q "producao" ./public/index.html
+
+workflows:
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
