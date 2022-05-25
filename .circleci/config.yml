@@ -1,0 +1,17 @@
+version: 2.1
+jobs:
+  build:
+    working_directory: ~/repo
+    docker:
+      - image: cimg/node:12.16
+    steps:
+      - checkout
+      - run:
+          name: Update NPM
+          command: "sudo npm install -g npm"
+      - run:
+          name: NPM install
+          command: "npm install && npm install -g gatsby-cli"
+      - run:
+          name: Gatsby Build
+          command: "gatsby build"
