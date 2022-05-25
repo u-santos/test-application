@@ -11,7 +11,7 @@ jobs:
           command: "sudo npm install -g npm"
       - run:
           name: NPM install
-          command: "sudo npm install"
+          command: "sudo npm install --unsafe-perm"
       - run:
           name: NPM install Gatsby-cli
           command: "sudo npm install -g gatsby-cli"
