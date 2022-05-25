@@ -13,5 +13,5 @@ jobs:
           name: NPM install
           command: "sudo npm install -g gatsby-cli"
       - run:
-          name: Gatsby Build
+          name: Build
           command: "sudo gatsby build"
